@@ -10,8 +10,8 @@ library(tidyverse)
 
 #setwd("~/Documents/External projects/JEV_models")
 # read in scripts
-source(here(".//ODEModel_with_fidelity//scripts//model.R"))
-source(here(".//ODEModel_with_fidelity//scripts//parameters.R"))
+source(here(".//scripts//model.R"))
+source(here(".//scripts//parameters.R"))
 
 # feeding pattern experiment (number of CP and CP always the same, why?, lazy to do the math)
 # Too many scenarios?
@@ -330,8 +330,6 @@ sensTrajDF %>%
         legend.position = "bottom",
         legend.direction = "horizontal")
 # ggsave(paste0(here(),"/ODEModel_with_fidelity/figures/traj5MosPerHost_revised.pdf"))
-
-
 
 #********Specie specific estimates of rho_A and f, with R_0 explorations*********
 # Get CI around estimates for initial preference for pigs, rho_A
