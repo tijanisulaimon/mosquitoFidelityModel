@@ -16,7 +16,7 @@ source(here(".//scripts//parameters.R"))
 # feeding pattern experiment (number of CP and CP always the same, why?, lazy to do the math)
 # Too many scenarios?
 feeding_exp_df <- expand_grid(
-  p_A = c(0, 0.05, 0.1, 0.3, 0.5), # c(0, 0.1, 0.2, 0.5),
+  p_A = c(0.01, 0.05, 0.1, 0.2, 0.5), # c(0, 0.1, 0.2, 0.5),
   H_A = 500,  
   H_D = 500,  
   N_m = 5000,   
@@ -35,8 +35,8 @@ feeding_exp_df <- feeding_exp_df %>%
 ## Deal with labeller() later
 ggplot(feeding_exp_df %>% 
          mutate(labelled_f = paste0("Fidelity = ", f), 
-                labelled_p_A = paste0("Init. pref. for pigs = ", p_A),
-                bite_order = if_else(feeding_pattern %in% c("C", "P"), "First bite", "subsequent bites" ) ),
+                labelled_p_A = paste0("Initial preference\nfor pigs = ", p_A),
+                bite_order = if_else(feeding_pattern %in% c("D", "A"), "First bite", "subsequent bites" ) ),
        aes(x = feeding_pattern, y = percent_fed*100, label = num_fed, fill = bite_order ) ) +
   geom_bar(stat = "identity", width = 0.9, show.legend = T) +
   geom_text(parse = TRUE, vjust = -0.5, size = 3, position = position_dodge(0.9)) +
@@ -49,44 +49,56 @@ ggplot(feeding_exp_df %>%
   expand_limits(x = 0, y = 1.1*100)+
   theme(panel.grid = element_blank(),
         legend.position = "top",
-        axis.text.x  = element_text(colour = "black"),
-        axis.title = element_text(colour = "black", size = 15),
+        axis.text.x  = element_text(colour = "black", face = "bold", size = 11),
+        axis.text.y  = element_text(colour = "black", size = 11),
+        axis.title = element_text(colour = "black", size = 16),
         strip.background = element_rect(colour = "black", fill = "white"),
-        strip.text = element_text(colour = "black", face = "bold", size = 10),
+        strip.text = element_text(colour = "black", face = "bold", size = 14),
         legend.key.height = unit(0, "cm"),
         legend.margin=margin(0,0,0,0),
-        legend.text = element_text(colour = "black", face = "bold", size = 15)) #+
+        legend.text = element_text(colour = "black", face = "bold", size = 16)) #+
 #  guides(fill = guide_colorbar( barheight = 30))
 
 # looks bettern when you zoom and save with width and height = 12
-# ggsave("./ODEModel_with_fidelity/figures/choiceExperimentOriginal.pdf", width = 12, height = 12, units = "in")
+# ggsave("./figures/choiceExperimentOriginal.pdf", width = 12, height = 12, units = "in")
 
 # plot version for main text
 ggplot(
-  feeding_exp_df %>% filter(feeding_pattern %in% c("PP", "PC", "CP", "CC") ) %>% 
-    mutate(first_bite = ifelse(feeding_pattern %in% c("PP", "PC"), "P", "C" ),
-           feeding_pattern = factor(feeding_pattern, levels = c("CP","PC","CC","PP")),
-           labelled_f = paste0("Fidelity = ", f), labelled_p_A = paste0("Initial preference\nfor pigs = ", p_A)) , 
-       aes(x = first_bite, y = num_fed/N_m, fill = feeding_pattern)) +
+  feeding_exp_df %>% filter(feeding_pattern %in% c("AA", "AD", "DA", "DD") ) %>%
+    mutate(first_bite = ifelse(feeding_pattern %in% c("AA", "AD"), "A", "D" ),
+           feeding_pattern = factor(feeding_pattern, levels = c("DA","AD","DD","AA")),
+           labelled_f = paste0("Fidelity = ", f), 
+           labelled_p_A = paste0("Initial preference\nfor amplifying host\nspecies (pigs) = ", p_A)) ,
+       aes(x = factor(first_bite, levels = c("D", "A"), labels = c("Cows (D)", "Pigs (A)")), 
+           y = num_fed/N_m, fill = feeding_pattern)) +
   geom_bar(stat = "identity", position = "stack", colour = "black" ) +
   facet_grid(labelled_f ~ labelled_p_A) +
-  labs(x = "Imprinted host species", y = "Proportion of mosquitoes\nimprinted on that species") +
-  scale_fill_manual(name = "Subsequent feeds after imprinting",
-                    breaks = c("CC","CP","PC","PP"),
+  labs(x = "Imprinted host species", y = "Proportion of mosquitoes imprinted onto each species") +
+  scale_fill_manual(name = "Subsequent feeds after\nimprinting (first bite)",
+                    breaks = c("DD","DA","AD","AA"),
                     values = c("blue","pink","skyblue","red"),
-                    labels = c("Cow (imprinted onto cow)", "Pig (imprinted onto cow)","Cow (imprinted onto pig)","Pig (imprinted onto pig)") ) +
+                    labels = c("Cow (imprinted onto cow)", 
+                               "Pig (imprinted onto cow)",
+                               "Cow (imprinted onto pig)",
+                               "Pig (imprinted onto pig)") ) +
   # scale_colour_manual(name = "Imprinted Host",
   #                   breaks = c("C","P"),
   #                   values = c("blue","red")) +
   theme_bw() +
   theme(panel.grid = element_blank(),
-        axis.text.x  = element_text(colour = "black", face = "bold", size = 10),
+        axis.text.x  = element_text(colour = "black", face = "bold", size = 13),
+        axis.text.y  = element_text(size = 12),
+        axis.title = element_text(size = 16),
+        legend.title = element_text(size = 12),
+        panel.spacing = unit(0.5, "lines"),
+        legend.position = "top",
         strip.background = element_rect(colour = "black", fill = "white"),
-        strip.text = element_text(colour = "black", face = "bold"),
+        strip.text = element_text(colour = "black", size = 14),
         legend.spacing.y = unit(0.5, 'cm'),
-        legend.text = element_text(colour = "black", face = "bold")) +
-  guides(fill = guide_legend(byrow = TRUE))
-# ggsave("./ODEModel_with_fidelity/figures/choiceExperiment.pdf", width = 12, height = 12, units = "in")
+        legend.text = element_text(colour = "black", face = "bold", size = 12)) #+
+ # guides(fill = guide_legend(byrow = TRUE))
+# ggsave("./figures/choiceExperiment.pdf", width = 12, height = 12, units = "in")
+
 
 # set scenario
 Nhost <- 1000
@@ -103,7 +115,7 @@ R0_exp_df <- expand.grid(
   f = seq(0, 1, 0.1),
   N_c = seq(0, 1000, 100),
   N_m = c(1, 5, 10, 20, 50)*Nhost,
-  p_A = c(0.01, 0.05, 0.1, 0.2) 
+  p_A = c(0.01, 0.05, 0.1, 0.2, 0.5) 
 ) 
 
  # Appy R0 function on parameter combinations
@@ -161,7 +173,7 @@ library(leaflet)
 pal = colorNumeric(rev("OrRd"), 1:6)
 
 R0_exp_df %>% mutate(
-  prefComp.pretty = paste0("Initial preference for\namplifying host = ", p_A),
+  prefComp.pretty = paste0("Initial preference\nfor amplifying\nhost = ", p_A),
   mosPerHost.pretty = 
     factor(paste0("Mosquitoes\nper host = ", N_m/Nhost), levels = paste0("Mosquitoes\nper host = ", unique(N_m/Nhost)) ) 
   ) %>% 
@@ -172,14 +184,16 @@ R0_exp_df %>% mutate(
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
   scale_y_continuous(breaks = seq(0, 1, 0.2)) +
   scale_fill_manual(values = c("skyblue", pal(1:6))) +
-  labs(x = "Fidelity", fill = expression(R[0]), y = expression(N[A]/N)) +
+  labs(x = "Fidelity", fill = expression(R[0]), 
+       y = expression( paste("Proportion of the host population that are amplifying hosts (", N[A]/N,")" ) ) ) +
   theme_bw() +
   theme(panel.grid = element_blank(),
-        axis.text = element_text(colour = "black", face = "bold"),
+        axis.text = element_text(colour = "black", size = 10),
+        axis.title = element_text(colour = "black", size = 16),
         strip.background = element_rect(colour = "black", fill = "white"),
-        strip.text = element_text(colour = "black", face = "bold", size = 10),
-        legend.text = element_text(colour = "black", face = "bold")) 
-# ggsave("./ODEModel_with_fidelity/figures/R0.pdf", width = 12, height = 12, units = "in")
+        strip.text = element_text(colour = "black", face = "bold", size = 14),
+        legend.text = element_text(colour = "black", face = "bold", size = 12)) 
+# ggsave("./figures/R0.pdf", width = 12, height = 12, units = "in")
 
 # initial conditions for simulation (scenario not included in paper)
 initial <- c(Nulv = M0
@@ -258,8 +272,8 @@ sensParamsDf <- expand.grid(
 # ********run model for each parameter set******
 sensTrajList <- mclapply(1:nrow(sensParamsDf), function(x){
   library(here)
-  source(here(".//ODEModel_with_fidelity//scripts//model.R"))
-  source(here(".//ODEModel_with_fidelity//scripts//parameters.R"))
+  source(here(".//scripts//model.R"))
+  source(here(".//scripts//parameters.R"))
 
   times <- seq(0,365,1)   # Time steps for reporting
 
@@ -302,7 +316,7 @@ sensTrajDF %>%
          fidelity %in% c(0, 0.2, 0.5, 0.8, 1),
          prefComp %in% c(0.05, 0.2)) %>% 
   mutate(startingS_c.pretty = paste(startingS_c, " amplifying\n", deadEnds, " dead-end", sep=""),
-         prefComp.pretty = paste("\nInitial amplifying\npreference: ", prefComp, sep=""),
+         prefComp.pretty = paste("\nInitial amplifying\npreference = ", prefComp, sep=""),
          fidelity.pretty = paste("f = ", fidelity, sep=""),
          fidelity.pretty = ifelse(fidelity.pretty == "f = 0", "f = 0\nNo fidelity", fidelity.pretty),
          fidelity.pretty = ifelse(fidelity.pretty == "f = 0.5", "f = 0.5\nMorderate fidelity", fidelity.pretty),
@@ -321,15 +335,17 @@ sensTrajDF %>%
   theme_bw(base_size = 9) +
   ylab("Prevalence") +
   xlab("Time") +
-  ggtitle("Epidemic trajectories") +
+#  ggtitle("Epidemic trajectories") +
   theme(strip.background = element_rect(fill="grey98"),
         strip.placement = "outside",
-        strip.text = element_text(face="bold", size = 9),
-        axis.text = element_text(face="bold"),
-        legend.text = element_text(face="bold", size = 12),
+       # title = element_text(size = 12),
+        strip.text = element_text(size = 13),
+        axis.text = element_text(size = 14),
+        axis.title = element_text(size = 16),
+        legend.text = element_text(face="bold", size = 14),
         legend.position = "bottom",
         legend.direction = "horizontal")
-# ggsave(paste0(here(),"/ODEModel_with_fidelity/figures/traj5MosPerHost_revised.pdf"))
+# ggsave(paste0(here(),"/figures/traj5MosPerHost_revised.pdf"))
 
 #********Specie specific estimates of rho_A and f, with R_0 explorations*********
 # Get CI around estimates for initial preference for pigs, rho_A
@@ -386,11 +402,11 @@ data.frame(f, CxG = likelihoodCxG, CxT = likelihoodCxT, CxV = likelihoodCxV) %>%
   theme(legend.position = c(0.2, 0.6), #"bottom",
         legend.background = element_blank(),
         legend.key.size = unit(1, "cm"),
-        axis.text = element_text(colour = "black", size = 12), 
+        axis.text = element_text(colour = "black", size = 16), 
         axis.title = element_text(colour = "black", size = 18),
-        legend.title = element_text(colour = "black", size = 15),
+        legend.title = element_text(colour = "black", size = 16),
         legend.box.background = element_blank(),
-        legend.text = element_text(colour = "black", face = "bold", size = 15))
+        legend.text = element_text(colour = "black", face = "bold", size = 16))
 
 # ggsave("./ODEModel_with_fidelity/figures/fidelity_estimate.pdf", width = 12, height = 12, units = "in")
 
@@ -452,12 +468,12 @@ R0_sp_df %>%
         panel.grid = element_blank(),
         legend.background = element_blank(),
         legend.key.size = unit(1, "cm"),
-        axis.text = element_text(colour = "black", size = 12),
+        axis.text = element_text(colour = "black", size = 14),
         axis.title = element_text(colour = "black", size = 18),
-        legend.title = element_text(colour = "black", size = 15),
+        legend.title = element_text(colour = "black", size = 16),
         #  legend.box.background = element_rect(colour = "black", fill = NA),
         legend.text = element_text(colour = "black", face = "bold", size = 15)) #+
 # guides(colour = guide_legend(nrow = 1))
-# ggsave("./ODEModel_with_fidelity/figures/R0_sp.pdf", width = 12, height = 12, units = "in")
+# ggsave("./figures/R0_sp.pdf", width = 12, height = 12, units = "in")
 
 

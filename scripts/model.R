@@ -109,20 +109,20 @@ feeding_preference <- function(p_A, H_A, H_D, N_m, f) {
   initial_pigs <- round(rho_A * N_m)
   initial_cows <- N_m - initial_pigs
   
-  PP <- (f + (1 - f) * rho_A)
-  PC <- ((1 - f) * (1 - rho_A))
-  CC <- (f + (1 - f) * (1 - rho_A))
-  CP <- ((1 - f) * rho_A)
+  AA <- (f + (1 - f) * rho_A)
+  AD <- ((1 - f) * (1 - rho_A))
+  DD <- (f + (1 - f) * (1 - rho_A))
+  DA <- ((1 - f) * rho_A)
   
-  pigs_to_pigs <- round(PP * initial_pigs)
-  pigs_to_cows <- round(PC * initial_pigs)
+  pigs_to_pigs <- round(AA * initial_pigs)
+  pigs_to_cows <- round(AD * initial_pigs)
   
-  cows_to_cows <- round(CC * initial_cows)
-  cows_to_pigs <- round(CP * initial_cows)
+  cows_to_cows <- round(DD * initial_cows)
+  cows_to_pigs <- round(DA * initial_cows)
   
   feeding_res <- tibble(
-    feeding_pattern = c("P", "PP", "PC", "C", "CP", "CC"),
-    percent_fed = c(rho_A, PP, PC, rho_D, CP, CC),
+    feeding_pattern = c("A", "AA", "AD", "D", "DA", "DD"),
+    percent_fed = c(rho_A, AA, AD, rho_D, DA, DD),
     num_fed = c(initial_pigs, pigs_to_pigs, pigs_to_cows, initial_cows, cows_to_pigs, cows_to_cows)#,
   #  first_meal = c(initial_pigs, initial_pigs, initial_cows, initial_cows)
   ) #%>% 
@@ -153,3 +153,5 @@ probability.of.data <- function(f,
   #  (comb(N,R) * probBiteCowImprintedCow^R * (1-probBiteCowImprintedCow)^(N-R))
   return(y)
 }
+
+
