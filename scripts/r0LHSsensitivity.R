@@ -77,10 +77,11 @@ stopCluster(cl)
 sensSims <- do.call(rbind,sensSims)
 head(sensSims)
 
-dat <- cbind.data.frame(randSnd,sensSims)
+dat <- cbind.data.frame(randSnd, sensSims) 
+dat$mos_per_host <- dat$N_m/dat$N_c # calculate mos per host
 
 
-dat <- reshape::melt(dat,measure.vars=c("f"
+dat <- reshape::melt(dat, measure.vars=c("f"
                                ,"p_A" 
                                ,"N_m"
                                ,"N_c"
@@ -89,6 +90,7 @@ dat <- reshape::melt(dat,measure.vars=c("f"
                                ,"gamma"
                                ,"mu"
                                ,"mu_m"
+                               ,"mos_per_host"
 ))
 
 # head(dat)
@@ -116,12 +118,12 @@ library(ggplot2)
 #   ) 
 
 
-ggplot(dat, aes(x=value, y=sim.res)) +
+ggplot(dat %>% filter(!(variable %in% c("N_m", "N_c"))), aes(x=value, y=sim.res)) +
   geom_point(size=0.3, col="black",alpha=0.5) +
-  facet_wrap(~ factor(variable, levels = c("f", "p_A", "N_m", "N_c", "alpha", "beta", "gamma", "mu", "mu_m"),
-                     labels = c("f", expression(p[A]), expression(N[m]), expression(N[A]), 
+  facet_wrap(~ factor(variable, levels = c("f", "p_A", "mos_per_host", "alpha", "beta", "gamma", "mu", "mu_m"),
+                     labels = c("f", expression(p[A]), expression(N[m]/N[A]), 
                                 "alpha", "beta", "gamma", "mu", expression(mu[m])) ), 
-             scales="free_x", labeller = label_parsed) +
+             scales="free_x", labeller = label_parsed, nrow = 4) +
   xlab("Parameter value") +
   ylab( expression(paste("Basic reproduction number (", R[0], ")" ) ) ) +
   theme_set(theme_bw())  +
