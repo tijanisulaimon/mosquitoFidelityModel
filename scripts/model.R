@@ -145,25 +145,33 @@ feeding_preference <- function(p_A, H_A, H_D, N_m, f) {
   return(feeding_res)
 }
 
-# combination function
-comb = function(n, x) {
-  factorial(n) / factorial(n-x) / factorial(x)
-}
-
 # parameter estimate function, given experimental results
-probability.of.data <- function(f, 
-                                n,
-                                r,
-                                N,
-                                R,
-                                rho_A,
-                                rho_D){
-  probBiteCowImprintedPig <- (1-f)*rho_D
-  probBiteCowImprintedCow <- rho_D + f*rho_A
-  y <- dbinom(r,n,probBiteCowImprintedPig) * dbinom(R,N,probBiteCowImprintedCow)
-  # y <- (comb(n,r) * probBiteCowImprintedPig^r * (1-probBiteCowImprintedPig)^(n-r)) * 
-  #  (comb(N,R) * probBiteCowImprintedCow^R * (1-probBiteCowImprintedCow)^(N-R))
-  return(y)
+# probability.of.data <- function(f, 
+#                                 n,
+#                                 r,
+#                                 N,
+#                                 R,
+#                                 rho_A,
+#                                 rho_D){
+#   probBiteCowImprintedPig <- (1-f)*rho_D
+#   probBiteCowImprintedCow <- rho_D + f*rho_A
+#   y <- dbinom(r,n,probBiteCowImprintedPig) * dbinom(R,N,probBiteCowImprintedCow)
+#   # y <- (comb(n,r) * probBiteCowImprintedPig^r * (1-probBiteCowImprintedPig)^(n-r)) * 
+#   #  (comb(N,R) * probBiteCowImprintedCow^R * (1-probBiteCowImprintedCow)^(N-R))
+#   return(y)
+# }
+
+# Likelihood function
+likelihood <- function(f, n, r, N, R, rho_A, rho_D) {
+  probBiteCowImprintedPig <- (1 - f) * rho_D
+  probBiteCowImprintedCow <- rho_D + f * rho_A
+  likelihood_r <- dbinom(r, n, probBiteCowImprintedPig)
+  likelihood_R <- dbinom(R, N, probBiteCowImprintedCow)
+  return(likelihood_r * likelihood_R)
 }
 
+# Negative log-likelihood function
+neg_log_likelihood <- function(f, n, r, N, R, rho_A, rho_D) {
+  -sum(log(likelihood(f, n, r, N, R, rho_A, rho_D)))
+}
 
