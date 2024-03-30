@@ -8,7 +8,6 @@ library(parallel)
 library(here)
 library(tidyverse)
 
-#setwd("~/Documents/External projects/JEV_models")
 # read in scripts
 source(here(".//scripts//model.R"))
 source(here(".//scripts//parameters.R"))
@@ -16,7 +15,7 @@ source(here(".//scripts//parameters.R"))
 # feeding pattern experiment (number of CP and CP always the same, why?, lazy to do the math)
 # Too many scenarios?
 feeding_exp_df <- expand_grid(
-  p_A = c(0.01, 0.05, 0.1, 0.2, 0.5), # c(0, 0.1, 0.2, 0.5),
+  p_A = c(0.01, 0.05, 0.1, 0.2, 0.5),
   H_A = 500,  
   H_D = 500,  
   N_m = 5000,   
@@ -118,7 +117,7 @@ R0_exp_df <- expand.grid(
   p_A = c(0.01, 0.05, 0.1, 0.2, 0.5) 
 ) 
 
- # Appy R0 function on parameter combinations
+# Appy R0 function on parameter combinations
 R0_exp_df <- R0_exp_df %>%
   rowwise() %>%
   mutate(
@@ -257,9 +256,9 @@ sim_f_Dat %>% select(-c(Sv, Iv)) %>%
 Nhost <- 1000
 
 sensParamsDf <- expand.grid(
-  startingNulv = c(1, 5, 10, 20, 50)*Nhost,
-  startingS_c =  c(50, 100, 200, 500),
-  prefComp = c(0.02, 0.05, 0.1, 0.2),
+  startingNulv = c(5, 10, 20, 50)*Nhost,
+  startingS_c =  c(100, 200, 500),
+  prefComp = c(0.05, 0.1, 0.2, 0.5),
   fidelity = seq(0, 1, 0.1),
   stringsAsFactors = F
 ) %>% 
@@ -299,7 +298,7 @@ sensTrajList <- mclapply(1:nrow(sensParamsDf), function(x){
                                                     f = sensParamsDf$fidelity[x]) ))  
 
   return( bind_cols(sensParamsDf[x, ], sim.res) )
-}, mc.cores = 5 ) 
+}, mc.cores = 2 ) 
 
 #******************************************************
 sensTrajDF <- do.call(rbind, sensTrajList)
@@ -311,8 +310,8 @@ sensTrajDF %>%
     names_to = "Host_sp",
     values_to = "I_host"
   ) %>% 
-  filter(mosquitoes.per.host == 5, 
-         startingS_c %in% c(100, 500),
+  filter(mosquitoes.per.host == 10, 
+         startingS_c %in% c(200, 500),
          fidelity %in% c(0, 0.2, 0.5, 0.8, 1),
          prefComp %in% c(0.05, 0.2)) %>% 
   mutate(startingS_c.pretty = paste(startingS_c, " amplifying\n", deadEnds, " dead-end", sep=""),
@@ -324,7 +323,7 @@ sensTrajDF %>%
   ggplot()+
   geom_line(aes( x = time, y = I_host, colour = Host_sp), linewidth=1)+
   scale_x_continuous(n.breaks = 3, limits=c(0,NA), expand=c(0,0))+
-  scale_y_continuous(limits=c(0,NA), expand=c(0.05,0.05), position = "left") +
+  scale_y_continuous(limits=c(0, NA), expand=c(0.05, 0.05), position = "left") +
   coord_cartesian(clip = "off") +
   facet_grid(paste0(startingS_c.pretty, "\n", prefComp.pretty) ~ fidelity.pretty) +
   #facet_grid(paste0(startingS_c.pretty, "\n", prefComp.pretty) ~ fidelity.pretty, switch = "y") +
@@ -349,57 +348,78 @@ sensTrajDF %>%
 
 #********Specie specific estimates of rho_A and f, with R_0 explorations*********
 # Get CI around estimates for initial preference for pigs, rho_A
-binom.test(x = 0, n = 10, conf.level = 0.95)
-binom.test(x = 14, n = 63, conf.level = 0.95)
-binom.test(x = 2, n = 13, conf.level = 0.95)
 
+rhoA_CxT = binom.test(x = 0, n = 10, conf.level = 0.95)
+rhoA_CxG = binom.test(x = 14, n = 63, conf.level = 0.95)
+rhoA_CxV = binom.test(x = 2, n = 13, conf.level = 0.95)
+
+init_pref_est_df <- data.frame(
+  species = c("CxT", "CxG", "CxV"),
+  p_A = c(0.05, rhoA_CxG$estimate[[1]], rhoA_CxV$estimate[[1]]),
+  p_A_lci = c(rhoA_CxT$conf.int[[1]], rhoA_CxG$conf.int[[1]], rhoA_CxV$conf.int[[1]]),
+  p_A_uci = c(rhoA_CxT$conf.int[[2]], rhoA_CxG$conf.int[[2]], rhoA_CxV$conf.int[[2]])
+)
+
+# f <- seq(0, 1, 0.01)
+# 
+# #
+# f_est <- NULL
 f <- seq(0, 1, 0.01)
-
+likelihoodCxT <- likelihood(f=f, n = 21, r = 9, N = 8, R = 7, rho_A = 0.05, rho_D = 1 - 0.05)
+likelihoodCxG <- likelihood(f=f, n = 14, r = 5, N = 5, R = 5, rho_A = 14/63, rho_D = 1 - 14/63)
+likelihoodCxV <- likelihood(f=f, n = 12, r = 3, N = 13, R = 13, rho_A = 2/13, rho_D = 1 - 2/13)
 # 
 f_est <- NULL
-likelihoodCxT <- probability.of.data(f, n = 21, r = 9, N = 8, R = 7, rho_A = 0.05, rho_D = 1 - 0.05)
-likelihoodCxG <- probability.of.data(f, n = 14, r = 5, N = 5, R = 5, rho_A = 14/63, rho_D = 1 - 14/63)
-likelihoodCxV <- probability.of.data(f, n = 12, r = 3, N = 13, R = 13, rho_A = 2/13, rho_D = 1 - 2/13)
-
 f_est$CxG <- f[which.max(likelihoodCxG)]
 f_est$CxT <- f[which.max(likelihoodCxT)]
 f_est$CxV <- f[which.max(likelihoodCxV)]
 f_est
 
-# plot(f,likelihoodCxT, type = 'l'
-#      , xlab = "Fidelity of Cx. tritaeniorhynchus (f)" , ylab ='Probability of Biting an Host Given Fidelity')
-# abline(v=f_est$CxT,lty=2,col='gray40')
-# 
-# plot(f,likelihoodCxG, type = 'l',
-#      xlab = "Fidelity of Cx. gelidus (f)" , ylab ='Probability of Biting an Host Given Fidelity' )
-# abline(v=f_est$CxG,lty=2,col='gray40')
-# 
-# plot(f,likelihoodCxV, type = 'l', 
-#      xlab = "Fidelity of Cx. vishui (f)", ylab ='Probability of Biting an Host Given Fidelity')
-# abline(v=f_est$CxV,lty=2,col='gray40')
+# Use optim to estimate paramters and 
+fit_CxT <- optim(par = 0.0001, fn = neg_log_likelihood, lower = 0, upper = 1,
+                 n = 21, r = 9, N = 8, R = 7, rho_A = 0.05, rho_D = 1 - 0.05, method = "Brent", hessian =T)
 
-segment_df <- data.frame(f_est) %>% 
-  melt() %>% 
-  cbind(maxLik = c(max(likelihoodCxG), max(likelihoodCxT), max(likelihoodCxV)) ) %>% 
-  mutate(variable = factor(variable, levels = c("CxG", "CxT", "CxV"),
+fit_CxG <- optim(par = 0.0001, fn = neg_log_likelihood, lower = 0, upper = 1,
+                 n = 14, r = 5, N = 5, R = 5, rho_A = 14/63, rho_D = 1 - 14/63, method = "Brent", hessian =T)
+
+fit_CxV <- optim(par = 0.0001, fn = neg_log_likelihood, lower = 0, upper = 1,
+                 n = 12, r = 3, N = 13, R = 13, rho_A = 2/13, rho_D = 1 - 2/13, method = "Brent", hessian =T)
+
+summary_from_optimize <- function(fit){
+  hessian <- fit$hessian
+  hessian.inv <- solve(hessian)
+  parameter.se <- sqrt(diag(hessian.inv))
+  parameter.se
+  return(c(
+    nll = fit$value,
+    ll = exp(-fit$value),
+    est = fit$par,
+    lci = fit$par - 1.96 * parameter.se,
+    uci = fit$par + 1.96 * parameter.se
+  ))
+}
+
+f_estimate_df <- t(sapply(list(CxT = fit_CxT, CxG = fit_CxG, CxV = fit_CxV), summary_from_optimize)) %>% 
+  as.data.frame() %>% rownames_to_column("species") 
+
+
+segment_df <- f_estimate_df %>% 
+  mutate(species = factor(species, levels = c("CxG", "CxT", "CxV"),
                            labels = c("Culex gelidus", "Culex tritaeniorhynchus", "Culex vishnui")))
 
 data.frame(f, CxG = likelihoodCxG, CxT = likelihoodCxT, CxV = likelihoodCxV) %>% 
-  reshape2::melt(id = f) %>% 
-  mutate(variable = factor(variable, levels = c("CxG", "CxT", "CxV"),
+  reshape2::melt(id = f, variable.name = "species") %>% 
+  mutate(species = factor(species, levels = c("CxG", "CxT", "CxV"),
                            labels = c("Culex gelidus", "Culex tritaeniorhynchus", "Culex vishnui"))) %>% 
-  # group_by(variable) %>% 
-  # mutate(grp_max = f[which.max(value)], yend = max(value)) %>% 
-  ggplot(aes(x = f, y = value, colour = variable) )+
+  ggplot(aes(x = f, y = value, colour = species) )+
   geom_density(stat = "identity", linewidth = 1.2) +
-  geom_segment(data = segment_df, aes(x = value, y = 0, xend = value, yend =  maxLik), linetype="dashed", linewidth = 1) +
-  # geom_vline(aes(xintercept = grp_max), linetype="dashed")+
-  #facet_wrap(~ factor(variable, labels = c("Culex tritaeniorhynchus", "Culex gelidus", "Culex vishnui"))) +
+  geom_segment(data = segment_df, aes(x = est, y = 0, xend = est, yend =  ll), linetype="dashed", linewidth = 1) +
   scale_x_continuous(breaks = seq(0, 1, 0.1)) +
   scale_colour_brewer(palette = "Set1", direction = -1) +
   labs(x = "Fidelity", y = "Probability of biting an host given fidelity", colour = "Mosquito species") +
   theme_classic()+
-  theme(legend.position = c(0.2, 0.6), #"bottom",
+  theme(legend.position = "inside", 
+        legend.position.inside = c(0.2, 0.6), #"bottom",
         legend.background = element_blank(),
         legend.key.size = unit(1, "cm"),
         axis.text = element_text(colour = "black", size = 16), 
@@ -408,72 +428,134 @@ data.frame(f, CxG = likelihoodCxG, CxT = likelihoodCxT, CxV = likelihoodCxV) %>%
         legend.box.background = element_blank(),
         legend.text = element_text(colour = "black", face = "bold", size = 16))
 
-# ggsave("./ODEModel_with_fidelity/figures/fidelity_estimate.pdf", width = 12, height = 12, units = "in")
-
+# ggsave("./figures/fidelity_estimate.pdf", width = 10, height = 10, units = "in")
 
 ##################################
 #********R_0 exploration*********
-#*# remember values that are fixed, and the ones we want to explore
-#*# function(f, p_A, N_m, N_c, alpha = 1/3, beta = 1, gamma = 1/5, mu = 1/365, mu_m = 1/30)
+
 Nhost <- 1000 
 
-R0_sp_df <- bind_rows(
-  expand_grid(mos_sp = paste0("Culex tritaeniorhynchus", " (f = ", f_est$CxT, ")" ), 
-              f = f_est$CxT, # estimated fidelity for Cx tritaeniorhynchus
-              p_A = 0.05,  # estimated preference for a pis
-              N_m = 5*Nhost, # starting number of mosquitoes
-              N_c = seq(10, 1000, 1)  # starting number of pigs
-              # ,alpha = 1/5, # estimated biting rate
-              # mu_m = -log(0.72) # estimated mortality rate
-  ),
-  expand_grid(mos_sp = paste0("Culex gelidus", " (f = ", f_est$CxG, ")" ), 
-              f = f_est$CxG, # estimated fidelity for Cx. gelidus
-              p_A = 14/63,  # estimated preference for a pis
-              N_m = 5*Nhost, # starting number of mosquitoes
-              N_c = seq(10, 1000, 1)#,  # starting number of pigs
-              # alpha = 1/8, # estimated biting rate
-              # mu_m = -log(0.8) # estimated mortality rate
-  ),
-  expand_grid(mos_sp = paste0("Culex vishnui", " (f = ", f_est$CxV, ")" ), 
-              f = f_est$CxV, # estimated fidelity for Cx Vishnui
-              p_A = 2/13,  # estimated preference for a pis
-              N_m = 5*Nhost, # starting number of mosquitoes
-              N_c = seq(10, 1000, 1)#,  # starting number of pigs
-              # alpha = 1/5, # estimated biting rate
-              # mu_m = -log(0.90) # estimated mortality rate
-  )
-) 
+# # select random sets of parameter values within parameter value ranges
+rLHS <- randomLHS(1000, nrow(f_estimate_df) )
+r_fidelity_Vals <- lapply(1:nrow(f_estimate_df), function(x){
+  temp <- f_estimate_df[x, ]
+  randomSample <- runif(rLHS[ ,x], min=temp$lci, max=temp$uci)
+})
 
+r_InitPref_Vals <- lapply(1:nrow(init_pref_est_df), function(x){
+  temp <- init_pref_est_df[x, ]
+  randomSample <- runif(rLHS[ ,x], min=temp$p_A_lci, max=temp$p_A_uci)
+})
 
-# Appy R0 function on parameter combinations
+r_fidelity_Vals <- do.call(cbind.data.frame, r_fidelity_Vals)
 
-R0_sp_df <- R0_sp_df %>%
+names(r_fidelity_Vals) <- f_estimate_df$species
+
+R0_sp_fidelity_df <- reshape2::melt(r_fidelity_Vals, variable.name = "species", value.name = "f") %>% 
+  inner_join(init_pref_est_df, by = "species") %>% 
+  expand_grid(N_c = seq(10, 1000, 1)) %>% 
   rowwise() %>%
-  mutate(R0 = list( calculate_R0(f = f, p_A = p_A, N_m = N_m, N_c = N_c) ) ) %>%
+  mutate(R0 = list( calculate_R0(f = f, p_A = p_A, N_m = 10*Nhost, N_c = N_c) ) ) %>%
   unnest(cols = c(R0) )
 
-R0_sp_df %>%
-  ggplot(aes(x = N_c/Nhost, y = R0)) +
-  geom_line(aes(group = mos_sp, color = mos_sp), linewidth = 1.2) +
-  #  geom_hline(aes(yintercept = 1), linewidth = 0.8, linetype = "dashed") +
-  #  facet_wrap(~ N_m/Nhost,scales = "free_y", ncol = 1) +
+R0_sp_fidelity_df$pretty_species <-
+  factor(R0_sp_fidelity_df$species, levels = c("CxG", "CxT", "CxV"),
+         labels = c(paste0("Culex gelidus", " (f = ", f_est$CxG, ")" ),
+                    paste0("Culex tritaeniorhynchus", " (f = ", f_est$CxT, ")" ),
+                    paste0("Culex vishnui", " (f = ", f_est$CxV, ")" )
+                    ))
+
+R0_sp_fidelity_df %>% 
+  group_by(species, pretty_species, N_c) %>% 
+  # dplyr::summarise(mean_R0 = mean(R0), 
+  #                  uci_R0 = Rmisc::CI(R0)[1], 
+  #                  lci_R0 = Rmisc::CI(R0)[3], .groups = "drop") %>% 
+  dplyr::summarise(mean_R0 = mean(R0), 
+                   uci_R0 = quantile(R0)[[2]], 
+                   lci_R0 = quantile(R0)[[4]], .groups = "drop") %>% 
+  ggplot(aes(x = N_c/Nhost, y = mean_R0, fill = pretty_species, color = pretty_species)) +
+  geom_ribbon(aes(ymin = lci_R0, ymax = uci_R0), alpha = 0.3, linewidth = 0.3) +
+  geom_line(linewidth = 1.2) +
+  geom_hline(aes(yintercept = 1), linewidth = 0.8, linetype = "dashed") +
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
   scale_y_continuous(n.breaks = 11) +
-  scale_colour_brewer(palette = "Set1", direction = -1) +
+  scale_colour_brewer(name = "Mosquito species", palette = "Set1", direction = -1) +
+  scale_fill_brewer(name = "Mosquito species", palette = "Set1", direction = -1) +
   labs(x = expression( paste("Proportion of amplifying hosts, pigs (", N[A]/N, ")" ) ), 
-       y = expression(paste("Basic reproduction number (", R[0], ")" ) ), 
-       color = "Mosquito species" ) +
+       y = expression(paste("Basic reproduction number (", R[0], ")" ) )) +
   theme_classic()+
   theme(legend.position = c(0.3, 0.75), #"bottom",
         panel.grid = element_blank(),
         legend.background = element_blank(),
-        legend.key.size = unit(1, "cm"),
+        legend.key.size = unit(1.2, "cm"),
+        legend.key.spacing.y = unit(0.5, "cm"),
         axis.text = element_text(colour = "black", size = 14),
         axis.title = element_text(colour = "black", size = 18),
-        legend.title = element_text(colour = "black", size = 16),
-        #  legend.box.background = element_rect(colour = "black", fill = NA),
-        legend.text = element_text(colour = "black", face = "bold", size = 15)) #+
-# guides(colour = guide_legend(nrow = 1))
-# ggsave("./figures/R0_sp.pdf", width = 12, height = 12, units = "in")
+        legend.title = element_text(colour = "black", size = 18),
+        legend.text = element_text(colour = "black", face = "bold", size = 16)) 
+
+# ggsave("./figures/R0_sp.pdf", width = 10, height = 10, units = "in")
+
+
+
+
+# R0_sp_df <- bind_rows(
+#   data.frame(
+#     species = "CxT",
+#     mos_sp = paste0("Culex tritaeniorhynchus", " (f = ", f_est$CxT, ")" ), 
+#               f = f_est$CxT, # estimated fidelity for Cx tritaeniorhynchus
+#               p_A = 0.05,  # estimated preference for a pis
+#               N_m = 5*Nhost, # starting number of mosquitoes
+#               N_c = seq(10, 1000, 1)  # starting number of pigs
+#   ),
+#   data.frame(
+#     species = "CxG",
+#     mos_sp = paste0("Culex gelidus", " (f = ", f_est$CxG, ")" ), 
+#               f = f_est$CxG, # estimated fidelity for Cx. gelidus
+#               p_A = 14/63,  # estimated preference for a pis
+#               N_m = 5*Nhost, # starting number of mosquitoes
+#               N_c = seq(10, 1000, 1)#,  # starting number of pigs
+#   ),
+#   data.frame(
+#     species = "CxV",
+#     mos_sp = paste0("Culex vishnui", " (f = ", f_est$CxV, ")" ), 
+#               f = f_est$CxV, # estimated fidelity for Cx Vishnui
+#               p_A = 2/13,  # estimated preference for a pis
+#               N_m = 5*Nhost, # starting number of mosquitoes
+#               N_c = seq(10, 1000, 1) #,  # starting number of pigs
+#   )
+# ) 
+# 
+# # Appy R0 function on parameter combinations
+# 
+# R0_sp_df <- R0_sp_df %>% 
+#   rowwise() %>%
+#   mutate(R0 = list( calculate_R0(f = f, p_A = p_A, N_m = N_m, N_c = N_c) ) ) %>%
+#   unnest(cols = c(R0) )
+# 
+# R0_sp_df %>%
+#   ggplot(aes(x = N_c/Nhost, y = R0)) +
+#   geom_line(aes(group = mos_sp, color = mos_sp), linewidth = 1.2) +
+#   #  geom_hline(aes(yintercept = 1), linewidth = 0.8, linetype = "dashed") +
+#   #  facet_wrap(~ N_m/Nhost,scales = "free_y", ncol = 1) +
+#   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
+#   scale_y_continuous(n.breaks = 11) +
+#   scale_colour_brewer(palette = "Set1", direction = -1) +
+#   labs(x = expression( paste("Proportion of amplifying hosts, pigs (", N[A]/N, ")" ) ), 
+#        y = expression(paste("Basic reproduction number (", R[0], ")" ) ), 
+#        color = "Mosquito species" ) +
+#   theme_classic()+
+#   theme(legend.position = c(0.3, 0.75), #"bottom",
+#         panel.grid = element_blank(),
+#         legend.background = element_blank(),
+#         legend.key.size = unit(1, "cm"),
+#         axis.text = element_text(colour = "black", size = 14),
+#         axis.title = element_text(colour = "black", size = 18),
+#         legend.title = element_text(colour = "black", size = 16),
+#         #  legend.box.background = element_rect(colour = "black", fill = NA),
+#         legend.text = element_text(colour = "black", face = "bold", size = 15)) #+
+# # guides(colour = guide_legend(nrow = 1))
+# # ggsave("./figures/R0_sp.pdf", width = 12, height = 12, units = "in")
+
 
 
