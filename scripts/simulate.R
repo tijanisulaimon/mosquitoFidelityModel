@@ -344,7 +344,7 @@ sensTrajDF %>%
         legend.text = element_text(face="bold", size = 14),
         legend.position = "bottom",
         legend.direction = "horizontal")
-# ggsave(paste0(here(),"/figures/traj5MosPerHost_revised.pdf"))
+# ggsave(paste0(here(),"/figures/traj5MosPerHost_revised.pdf"), width = 10, height = 10, units = "in")
 
 #********Specie specific estimates of rho_A and f, with R_0 explorations*********
 # Get CI around estimates for initial preference for pigs, rho_A
@@ -478,7 +478,7 @@ R0_sp_fidelity_df %>%
   geom_line(linewidth = 1.2) +
   geom_hline(aes(yintercept = 1), linewidth = 0.8, linetype = "dashed") +
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
-  scale_y_continuous(n.breaks = 11) +
+  scale_y_continuous(n.breaks = 8) +
   scale_colour_brewer(name = "Mosquito species", palette = "Set1", direction = -1) +
   scale_fill_brewer(name = "Mosquito species", palette = "Set1", direction = -1) +
   labs(x = expression( paste("Proportion of amplifying hosts, pigs (", N[A]/N, ")" ) ), 
