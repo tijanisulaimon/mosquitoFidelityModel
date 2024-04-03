@@ -176,7 +176,7 @@ R0_exp_df %>% mutate(
   mosPerHost.pretty = 
     factor(paste0("Mosquitoes\nper host = ", N_m/Nhost), levels = paste0("Mosquitoes\nper host = ", unique(N_m/Nhost)) ) 
   ) %>% 
-  mutate(R0 = cut(R0, breaks= c(0, 1, 2, 4, 6, 8, 10, max(R0)%>%ceiling), include.lowest = TRUE)) %>%   # bin the r0 values
+  mutate(R0 = cut(R0, breaks= c(0, 1, 2, 4, 6, 8, 10, max(R0)%>%ceiling), include.lowest = TRUE, right = F)) %>%   # bin the r0 values
   ggplot(aes(x = f, y = N_c/Nhost)) +
   geom_raster(aes(fill = R0) ) +  
   facet_grid(mosPerHost.pretty ~ prefComp.pretty, scales = "free_y") +
@@ -310,8 +310,8 @@ sensTrajDF %>%
     names_to = "Host_sp",
     values_to = "I_host"
   ) %>% 
-  filter(mosquitoes.per.host == 10, 
-         startingS_c %in% c(200, 500),
+  filter(mosquitoes.per.host == 5, 
+         startingS_c %in% c(100, 500),
          fidelity %in% c(0, 0.2, 0.5, 0.8, 1),
          prefComp %in% c(0.05, 0.2)) %>% 
   mutate(startingS_c.pretty = paste(startingS_c, " amplifying\n", deadEnds, " dead-end", sep=""),
@@ -338,13 +338,13 @@ sensTrajDF %>%
   theme(strip.background = element_rect(fill="grey98"),
         strip.placement = "outside",
        # title = element_text(size = 12),
-        strip.text = element_text(size = 13),
+        strip.text = element_text(size = 16),
         axis.text = element_text(size = 14),
         axis.title = element_text(size = 16),
-        legend.text = element_text(face="bold", size = 14),
+        legend.text = element_text(face="bold", size = 16),
         legend.position = "bottom",
         legend.direction = "horizontal")
-# ggsave(paste0(here(),"/figures/traj5MosPerHost_revised.pdf"), width = 10, height = 10, units = "in")
+# ggsave(paste0(here(),"/figures/traj5MosPerHost_revised.pdf"), width = 12, height = 12, units = "in")
 
 #********Specie specific estimates of rho_A and f, with R_0 explorations*********
 # Get CI around estimates for initial preference for pigs, rho_A
@@ -455,7 +455,7 @@ R0_sp_fidelity_df <- reshape2::melt(r_fidelity_Vals, variable.name = "species", 
   inner_join(init_pref_est_df, by = "species") %>% 
   expand_grid(N_c = seq(10, 1000, 1)) %>% 
   rowwise() %>%
-  mutate(R0 = list( calculate_R0(f = f, p_A = p_A, N_m = 10*Nhost, N_c = N_c) ) ) %>%
+  mutate(R0 = list( calculate_R0(f = f, p_A = p_A, N_m = 5*Nhost, N_c = N_c) ) ) %>%
   unnest(cols = c(R0) )
 
 R0_sp_fidelity_df$pretty_species <-
@@ -474,17 +474,18 @@ R0_sp_fidelity_df %>%
                    uci_R0 = quantile(R0)[[2]], 
                    lci_R0 = quantile(R0)[[4]], .groups = "drop") %>% 
   ggplot(aes(x = N_c/Nhost, y = mean_R0, fill = pretty_species, color = pretty_species)) +
-  geom_ribbon(aes(ymin = lci_R0, ymax = uci_R0), alpha = 0.3, linewidth = 0.3) +
+  geom_ribbon(aes(ymin = lci_R0, ymax = uci_R0), alpha = 0.2, colour = NA) +
   geom_line(linewidth = 1.2) +
-  geom_hline(aes(yintercept = 1), linewidth = 0.8, linetype = "dashed") +
+  geom_hline(aes(yintercept = 1), linewidth = 0.8, linetype = "dashed", colour = "gray60") +
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
-  scale_y_continuous(n.breaks = 8) +
+  scale_y_continuous(n.breaks = 6) +
   scale_colour_brewer(name = "Mosquito species", palette = "Set1", direction = -1) +
   scale_fill_brewer(name = "Mosquito species", palette = "Set1", direction = -1) +
   labs(x = expression( paste("Proportion of amplifying hosts, pigs (", N[A]/N, ")" ) ), 
        y = expression(paste("Basic reproduction number (", R[0], ")" ) )) +
   theme_classic()+
-  theme(legend.position = c(0.3, 0.75), #"bottom",
+  theme(legend.position = "inside", #"bottom",
+        legend.position.inside = c(0.3, 0.7),
         panel.grid = element_blank(),
         legend.background = element_blank(),
         legend.key.size = unit(1.2, "cm"),

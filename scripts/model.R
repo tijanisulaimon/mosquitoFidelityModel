@@ -35,21 +35,21 @@ mod_with_fidelity <- function(tt,yy,parms) with(c(parms,as.list(yy)), {
   dNulv <- f_m*Nv - alpha*rho_c*Nulv - alpha*rho_de*Nulv  - mu_v*Nulv
     
   # mosquitoes imprinted on competent hosts
-  dSv_c <- (alpha*rho_c*Nulv - alpha*rho_c*Nulv*p_hv*I_c/Nh) -  (alpha*p_hv*(rho_c + f*rho_de)*I_c/Nh) *Sv_c - mu_v*Sv_c   # susceptible
-  dIv_c <- alpha*rho_c*Nulv*p_hv*I_c/Nh +  (alpha*p_hv*(rho_c + f*rho_de)*I_c/Nh) *Sv_c - mu_v*Iv_c                  # infectious
+  dSv_c <- (alpha*rho_c*Nulv - alpha*rho_c*Nulv*p_hv*I_c/N_c) -  (alpha*p_hv*(rho_c + f*rho_de)*I_c/N_c) *Sv_c - mu_v*Sv_c   # susceptible
+  dIv_c <- alpha*rho_c*Nulv*p_hv*I_c/N_c +  (alpha*p_hv*(rho_c + f*rho_de)*I_c/N_c) *Sv_c - mu_v*Iv_c                  # infectious
   
   # mosquitoes imprinted on dead-end hosts
-  dSv_de <-  alpha*rho_de*Nulv - (alpha*p_hv*(1-f)*rho_c*I_c/Nh) *Sv_de - mu_v*Sv_de     # susceptible
-  dIv_de <- (alpha*p_hv*(1-f)*rho_c*I_c/Nh) *Sv_de - mu_v*Iv_de                       # infectious
+  dSv_de <-  alpha*rho_de*Nulv - (alpha*p_hv*(1-f)*rho_c*I_c/N_c) *Sv_de - mu_v*Sv_de     # susceptible
+  dIv_de <- (alpha*p_hv*(1-f)*rho_c*I_c/N_c) *Sv_de - mu_v*Iv_de                       # infectious
   
   # competent hosts
-  dS_c <- f_h*N_c - alpha*p_vh*(rho_c + f*rho_de)*Iv_c*S_c/Nh - alpha*p_vh*(1-f)*rho_c*Iv_de*S_c/Nh - mu_h*S_c      # susceptible              
-  dI_c <- alpha*p_vh*(rho_c + f*rho_de)*Iv_c*S_c/Nh + alpha*p_vh*(1-f)*rho_c*Iv_de*S_c/Nh - phi_h*I_c - mu_h*I_c    # infected                                
+  dS_c <- f_h*N_c - alpha*p_vh*(rho_c + f*rho_de)*Iv_c*S_c/N_c - alpha*p_vh*(1-f)*rho_c*Iv_de*S_c/N_c - mu_h*S_c      # susceptible              
+  dI_c <- alpha*p_vh*(rho_c + f*rho_de)*Iv_c*S_c/N_c + alpha*p_vh*(1-f)*rho_c*Iv_de*S_c/N_c - phi_h*I_c - mu_h*I_c    # infected                                
   dR_c <- phi_h*I_c - mu_h*R_c                              # recovered
   
   # dead-end hosts
-  dS_de <- f_h*N_de - alpha*p_vh*(rho_de + f*rho_c)*Iv_de*S_de/Nh - alpha*p_vh*(1-f)*rho_de*Iv_c*S_de/Nh - mu_h*S_de     # susceptible              
-  dI_de <- alpha*p_vh*(rho_de + f*rho_c)*Iv_de*S_de/Nh + alpha*p_vh*(1-f)*rho_de*Iv_c*S_de/Nh - phi_h*I_de - mu_h*I_de  # infected                                
+  dS_de <- f_h*N_de - alpha*p_vh*(rho_de + f*rho_c)*Iv_de*S_de/N_de - alpha*p_vh*(1-f)*rho_de*Iv_c*S_de/N_de - mu_h*S_de     # susceptible              
+  dI_de <- alpha*p_vh*(rho_de + f*rho_c)*Iv_de*S_de/N_de + alpha*p_vh*(1-f)*rho_de*Iv_c*S_de/N_de - phi_h*I_de - mu_h*I_de  # infected                                
   dR_de <- phi_h*I_de - mu_h*R_de                              # recovered
   
   return(list( c(dNulv, dSv_c,dIv_c, dSv_de,dIv_de, dS_c,dI_c,dR_c, dS_de,dI_de,dR_de) ))
@@ -89,25 +89,18 @@ calculate_R0 <- function(f, p_A, N_m, N_c, alpha = 1/3, beta = 1, gamma = 1/5, m
   f2 <- ( (1 - f) * rho_A )
   
   R0_mos_imp_A_by_host_A <- 
-    (f1*alpha*beta*rho_A*alpha*N_m + rho_A*alpha*beta*(1-alpha)*N_m)/( (gamma + mu) * N )
+    (f1*alpha*beta*rho_A*alpha*N_m + rho_A*alpha*beta*(1-alpha)*N_m)/( (gamma + mu) * N_c )
   
-  R0_mos_imp_D_by_host_A <- (f2*alpha*beta*(1-rho_A)*alpha*N_m)/( (gamma + mu) * N )
+  R0_mos_imp_D_by_host_A <- (f2*alpha*beta*(1-rho_A)*alpha*N_m)/( (gamma + mu) * N_c )
   
-  R0_host_A_by_mos_imp_A <- (f1*alpha*beta*N_c)/(mu_m*N)
+  R0_host_A_by_mos_imp_A <- (f1*alpha*beta)/mu_m
   
-  R0_host_A_by_mos_imp_D <- (f2*alpha*beta*N_c)/(mu_m*N)
+  R0_host_A_by_mos_imp_D <- (f2*alpha*beta)/mu_m
   
   R_0 <- sqrt(
     R0_mos_imp_A_by_host_A*R0_host_A_by_mos_imp_A + R0_mos_imp_D_by_host_A*R0_host_A_by_mos_imp_D
   )
-    
-  # term1 <- alpha * beta / mu_m
-  # term2 <- (alpha * beta * N_m) / ( (gamma + mu) * N_c )
-  # term3 <- rho_A * f1 * ( alpha * f1 - alpha + 1 )
-  # term4 <- alpha * f2 * f2 * (1 - rho_A)
-  # R_0 <- sqrt( term1 * term2 * (term3 + term4) )
-  
-  
+
   R_0 <- ifelse(is.infinite(R_0) | is.na(R_0), 0, R_0)
   return(R_0)
 }
