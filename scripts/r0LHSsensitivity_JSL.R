@@ -95,28 +95,64 @@ dat <- reshape::melt(dat, measure.vars=c(
 
 # head(dat)
 
- ggplot(dat, aes(x=value,y=sim.res,colour=f)) +
-   geom_point(size=0.01,alpha=0.5) +
-   facet_wrap(~variable,scales="free_x") +
-   scale_color_gradient(low="#0000FF",high="#FF0000") +
-   xlab("Parameter value") +
-   ylab("R0") +
-   theme_set(theme_bw())  +
-   theme(panel.border = element_blank()
-         ,axis.line = element_line(color = 'grey')
-         ,text=element_text(size=9)
-         ,panel.spacing = unit(1, "lines")
-         #,plot.margin=unit(c(0.2,0.1,0.1,0.1), "cm")
-         ,axis.text=element_text(size=6)
-         ,legend.key.size = unit(0.6,"line")
-         ,legend.background = element_blank()
-         ,legend.text=element_text(size=9)
-         ,legend.position =c(0.9,0.2)
-         ,legend.title = element_text(size=9)
-         ,strip.background = element_rect(fill="white",color="white")
-   ) 
+ # ggplot(dat, aes(x=value,y=sim.res,colour=f)) +
+ #   geom_point(size=0.01,alpha=0.5) +
+ #   facet_wrap(~variable,scales="free_x") +
+ #   scale_color_gradient(low="#0000FF",high="#FF0000") +
+ #   xlab("Parameter value") +
+ #   ylab("R0") +
+ #   theme_set(theme_bw())  +
+ #   theme(panel.border = element_blank()
+ #         ,axis.line = element_line(color = 'grey')
+ #         ,text=element_text(size=9)
+ #         ,panel.spacing = unit(1, "lines")
+ #         #,plot.margin=unit(c(0.2,0.1,0.1,0.1), "cm")
+ #         ,axis.text=element_text(size=6)
+ #         ,legend.key.size = unit(0.6,"line")
+ #         ,legend.background = element_blank()
+ #         ,legend.text=element_text(size=9)
+ #         ,legend.position =c(0.9,0.2)
+ #         ,legend.title = element_text(size=9)
+ #         ,strip.background = element_rect(fill="white",color="white")
+ #   ) 
 
-
+# night want to reduce the size and alpha of points
+ggplot(dat, aes(x=value,y=sim.res,colour=f)) +
+  geom_point(size=0.8,alpha=0.5) +
+  facet_wrap( ~ factor(variable, levels = c("p_A","Nmph","alpha","beta","gamma","mu","mu_m", "comp2dead"), 
+                       labels = c(expression(paste("Initial amplifying host preference (",p[A],")" )  ), 
+                                  expression(paste("Number of mosquitoes per host (",N[m]/H[A],")" ) ),
+                                  expression(paste("Mosquito biting rate (", alpha, ")")),
+                                  expression(paste("Transmission probability (", beta, ")")),
+                                  expression(paste("Host recovery rate (", gamma, ")")),
+                                  expression(paste("Host mortality rate (", mu, ")")),
+                                  expression(paste("Mosquito mortality rate (", mu[m], ")")), 
+                                  expression(paste("Number of dead-end host (", H[D], ")"))
+                                  ) ), 
+              scales = "free_x", labeller = label_parsed) +
+  # scale_colour_viridis_c(option = "D") +
+  scale_color_gradient(name = "Fidelity (f)", low="#0000FF", high="#FF0000", breaks = seq(0, 1, 0.2), limit = c(0, 1)) +
+  xlab("Parameter value") +
+  ylab(expression(R[0])) +
+  theme_set(theme_bw())  +
+  theme(panel.border = element_blank()
+        ,axis.line = element_line(color = 'grey')
+        ,text=element_text(size=16)
+        ,panel.spacing = unit(1, "lines")
+        #,plot.margin=unit(c(0.2,0.1,0.1,0.1), "cm")
+        ,axis.text=element_text(size=12)
+        ,legend.background = element_blank()
+        ,legend.text=element_text(size=12)
+        ,legend.title = element_text(size=14)
+        ,strip.background = element_rect(fill="white",color="white"),
+        legend.position = "inside", 
+        legend.position.inside = c(0.83, 0.15),
+        legend.key.width = unit(1.5, "cm"),
+        legend.key.height = unit(1, "cm"),
+        legend.title.position = "top",
+        legend.direction = "horizontal"
+  ) 
+# ggsave("./figures/global_sensitivity_analysis.pdf", width = 12, height = 12, units = "in")
  #***********or just including in a plot of its own as before**********
  dat <- cbind.data.frame(randSnd, sensSims) 
  dat$comp2dead <- dat$N_c/1000
