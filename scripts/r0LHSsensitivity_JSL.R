@@ -1,5 +1,6 @@
 library(parallel)
 library(lhs)
+library(ggplot2)
 
 ##
 
@@ -76,27 +77,69 @@ stopCluster(cl)
 sensSims <- do.call(rbind,sensSims)
 head(sensSims)
 
+#************could show effect of fidelity by color scale on rest of plots e.g.**********
 dat <- cbind.data.frame(randSnd, sensSims) 
+dat$comp2dead <- dat$N_c/1000
+dat <- dat[,-4] # remove N_c column
 
-
-dat <- reshape::melt(dat, measure.vars=c("f"
-                               ,"p_A" 
-                               ,"Nmph"
-                               ,"N_c"
+dat <- reshape::melt(dat, measure.vars=c(
+                               "p_A" 
+                               ,"Nmph" # number of mosquitoes per host
                                ,"alpha"
                                ,"beta"
                                ,"gamma"
                                ,"mu"
                                ,"mu_m"
+                               ,"comp2dead"
 ))
 
 # head(dat)
 
-library(ggplot2)
-
- ggplot(dat, aes(x=value,y=sim.res)) +
-   geom_point(size=0.01,col="black",alpha=0.2) +
+ ggplot(dat, aes(x=value,y=sim.res,colour=f)) +
+   geom_point(size=0.01,alpha=0.5) +
    facet_wrap(~variable,scales="free_x") +
+   scale_color_gradient(low="#0000FF",high="#FF0000") +
+   xlab("Parameter value") +
+   ylab("R0") +
+   theme_set(theme_bw())  +
+   theme(panel.border = element_blank()
+         ,axis.line = element_line(color = 'grey')
+         ,text=element_text(size=9)
+         ,panel.spacing = unit(1, "lines")
+         #,plot.margin=unit(c(0.2,0.1,0.1,0.1), "cm")
+         ,axis.text=element_text(size=6)
+         ,legend.key.size = unit(0.6,"line")
+         ,legend.background = element_blank()
+         ,legend.text=element_text(size=9)
+         ,legend.position =c(0.9,0.2)
+         ,legend.title = element_text(size=9)
+         ,strip.background = element_rect(fill="white",color="white")
+   ) 
+
+
+ #***********or just including in a plot of its own as before**********
+ dat <- cbind.data.frame(randSnd, sensSims) 
+ dat$comp2dead <- dat$N_c/1000
+ dat <- dat[,-4] # remove N_c column
+ 
+ dat <- reshape::melt(dat, measure.vars=c(
+   "f"
+   ,"p_A" 
+   ,"Nmph"
+   ,"alpha"
+   ,"beta"
+   ,"gamma"
+   ,"mu"
+   ,"mu_m"
+   ,"comp2dead"
+ ))
+ 
+ # head(dat)
+ 
+ ggplot(dat, aes(x=value,y=sim.res)) +
+   geom_point(size=0.01,color="black",alpha=0.2) +
+   facet_wrap(~variable,scales="free_x") +
+  # scale_color_gradient(low="#0000FF",high="#FF0000") +
    xlab("Parameter value") +
    ylab("R0") +
    theme_set(theme_bw())  +
@@ -113,9 +156,7 @@ library(ggplot2)
          ,legend.title = element_text(size=9)
          ,strip.background = element_rect(fill="white",color="white")
    ) 
-
-
-
+ 
 
 
 # ggplot(dat %>% filter(!(variable %in% c("N_m", "N_c"))), aes(x=value, y=sim.res)) +
