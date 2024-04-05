@@ -127,7 +127,7 @@ ggplot(dat, aes(x=value,y=sim.res,colour=f)) +
                                   expression(paste("Host recovery rate (", gamma, ")")),
                                   expression(paste("Host mortality rate (", mu, ")")),
                                   expression(paste("Mosquito mortality rate (", mu[m], ")")), 
-                                  expression(paste("Number of dead-end host (", H[D], ")"))
+                                  expression(paste("Number of dead-end host (", H[A]/H[D], ")"))
                                   ) ), 
               scales = "free_x", labeller = label_parsed) +
   # scale_colour_viridis_c(option = "D") +
