@@ -318,7 +318,7 @@ sensTrajDF %>%
          prefComp.pretty = paste("\nInitial amplifying\npreference = ", prefComp, sep=""),
          fidelity.pretty = paste("f = ", fidelity, sep=""),
          fidelity.pretty = ifelse(fidelity.pretty == "f = 0", "f = 0\nNo fidelity", fidelity.pretty),
-         fidelity.pretty = ifelse(fidelity.pretty == "f = 0.5", "f = 0.5\nMorderate fidelity", fidelity.pretty),
+         fidelity.pretty = ifelse(fidelity.pretty == "f = 0.5", "f = 0.5\nModerate fidelity", fidelity.pretty),
          fidelity.pretty = ifelse(fidelity.pretty == "f = 1", "f = 1\nPerfect fidelity", fidelity.pretty)) %>%
   ggplot()+
   geom_line(aes( x = time, y = I_host, colour = Host_sp), linewidth=1)+
@@ -338,7 +338,7 @@ sensTrajDF %>%
   theme(strip.background = element_rect(fill="grey98"),
         strip.placement = "outside",
        # title = element_text(size = 12),
-        strip.text = element_text(size = 16),
+        strip.text = element_text(size = 17),
         axis.text = element_text(size = 14),
         axis.title = element_text(size = 16),
         legend.text = element_text(face="bold", size = 16),
@@ -478,15 +478,15 @@ R0_sp_fidelity_df %>%
   geom_line(linewidth = 1.2) +
   geom_hline(aes(yintercept = 1), linewidth = 0.8, linetype = "dashed", colour = "gray60") +
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
-  scale_y_continuous(n.breaks = 6) +
+  scale_y_continuous(n.breaks = 9, limits = c(0, max(R0_sp_fidelity_df$R0))) +
   scale_colour_brewer(name = "Mosquito species", palette = "Set1", direction = -1) +
   scale_fill_brewer(name = "Mosquito species", palette = "Set1", direction = -1) +
   labs(x = expression( paste("Proportion of amplifying hosts, pigs (", N[A]/N, ")" ) ), 
        y = expression(paste("Basic reproduction number (", R[0], ")" ) )) +
-  theme_classic()+
+  theme_bw()+
   theme(legend.position = "inside", #"bottom",
         legend.position.inside = c(0.3, 0.7),
-        panel.grid = element_blank(),
+       # panel.grid = element_blank(),
         legend.background = element_blank(),
         legend.key.size = unit(1.2, "cm"),
         legend.key.spacing.y = unit(0.5, "cm"),
