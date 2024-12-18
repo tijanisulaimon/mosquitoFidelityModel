@@ -349,41 +349,49 @@ sensTrajDF %>%
 #********Specie specific estimates of rho_A and f, with R_0 explorations*********
 # Get CI around estimates for initial preference for pigs, rho_A
 
-rhoA_CxT = binom.test(x = 0, n = 10, conf.level = 0.95)
-rhoA_CxG = binom.test(x = 14, n = 63, conf.level = 0.95)
-rhoA_CxV = binom.test(x = 2, n = 13, conf.level = 0.95)
+# Perform binomial tests
+rhoA_CxT <- binom.test(x = 0, n = 10, p = 0.5, conf.level = 0.95)
+rhoA_CxG <- binom.test(x = 14, n = 63, p = 0.5, conf.level = 0.95)
+rhoA_CxV <- binom.test(x = 2, n = 13, p = 0.5, conf.level = 0.95)
 
-init_pref_est_df <- data.frame(
-  species = c("CxT", "CxG", "CxV"),
-  p_A = c(0.05, rhoA_CxG$estimate[[1]], rhoA_CxV$estimate[[1]]),
-  p_A_lci = c(rhoA_CxT$conf.int[[1]], rhoA_CxG$conf.int[[1]], rhoA_CxV$conf.int[[1]]),
-  p_A_uci = c(rhoA_CxT$conf.int[[2]], rhoA_CxG$conf.int[[2]], rhoA_CxV$conf.int[[2]])
+# Tidy up the results
+init_pref_res <- bind_rows(
+  broom::tidy(rhoA_CxT) %>% mutate(Species = "Cx. tritaeniorhynchus"),
+  broom::tidy(rhoA_CxG) %>% mutate(Species = "Cx. gelidus"),
+  broom::tidy(rhoA_CxV) %>% mutate(Species = "Cx. vishnui")
 )
 
-# f <- seq(0, 1, 0.01)
-# 
-# #
-# f_est <- NULL
-f <- seq(0, 1, 0.01)
-likelihoodCxT <- likelihood(f=f, n = 21, r = 9, N = 8, R = 7, rho_A = 0.05, rho_D = 1 - 0.05)
-likelihoodCxG <- likelihood(f=f, n = 14, r = 5, N = 5, R = 5, rho_A = 14/63, rho_D = 1 - 14/63)
-likelihoodCxV <- likelihood(f=f, n = 12, r = 3, N = 13, R = 13, rho_A = 2/13, rho_D = 1 - 2/13)
-# 
-f_est <- NULL
-f_est$CxG <- f[which.max(likelihoodCxG)]
-f_est$CxT <- f[which.max(likelihoodCxT)]
-f_est$CxV <- f[which.max(likelihoodCxV)]
-f_est
+# pigs were not fed on in the experiment, so set rho_A to a small value within range
+init_pref_res$estimate[init_pref_res$Species == "Cx. tritaeniorhynchus"] <- 0.05
+
+# Select and organize columns
+init_pref_tab <- init_pref_res %>%
+  select(Species, estimate, conf.low, conf.high, p.value) %>%
+  mutate(p_estimate_95CI = paste0(round(estimate, 2), " (", 
+                                round(conf.low, 2), ", ", round(conf.high, 2), ")")) %>%
+  select(Species, p_estimate_95CI, p.value) %>%
+  rename("p_value" = p.value)
+
+init_pref_tab
+
+
+# init_pref_est_df <- data.frame(
+#   species = c("CxT", "CxG", "CxV"),
+#   p_A = c(0.05, rhoA_CxG$estimate[[1]], rhoA_CxV$estimate[[1]]),
+#   p_A_lci = c(rhoA_CxT$conf.int[[1]], rhoA_CxG$conf.int[[1]], rhoA_CxV$conf.int[[1]]),
+#   p_A_uci = c(rhoA_CxT$conf.int[[2]], rhoA_CxG$conf.int[[2]], rhoA_CxV$conf.int[[2]])
+# )
+
 
 # Use optim to estimate paramters and 
 fit_CxT <- optim(par = 0.0001, fn = neg_log_likelihood, lower = 0, upper = 1,
-                 n = 21, r = 9, N = 8, R = 7, rho_A = 0.05, rho_D = 1 - 0.05, method = "Brent", hessian =T)
+                 n_imprinted_pig = 21, r_pig_pig = 12, n_imprinted_cow = 8, r_cow_cow = 7, rho_A = 0.05, method = "Brent", hessian =T)
 
 fit_CxG <- optim(par = 0.0001, fn = neg_log_likelihood, lower = 0, upper = 1,
-                 n = 14, r = 5, N = 5, R = 5, rho_A = 14/63, rho_D = 1 - 14/63, method = "Brent", hessian =T)
+                 n_imprinted_pig = 14, r_pig_pig = 9, n_imprinted_cow = 5, r_cow_cow = 5, rho_A = 14/63, method = "Brent", hessian =T)
 
 fit_CxV <- optim(par = 0.0001, fn = neg_log_likelihood, lower = 0, upper = 1,
-                 n = 12, r = 3, N = 13, R = 13, rho_A = 2/13, rho_D = 1 - 2/13, method = "Brent", hessian =T)
+                 n_imprinted_pig = 12, r_pig_pig = 9, n_imprinted_cow = 13, r_cow_cow = 13, rho_A = 2/13, method = "Brent", hessian =T)
 
 summary_from_optimize <- function(fit){
   hessian <- fit$hessian
@@ -399,9 +407,34 @@ summary_from_optimize <- function(fit){
   ))
 }
 
-f_estimate_df <- t(sapply(list(CxT = fit_CxT, CxG = fit_CxG, CxV = fit_CxV), summary_from_optimize)) %>% 
-  as.data.frame() %>% rownames_to_column("species") 
+# f_estimate_df <- t(sapply(list(CxT = fit_CxT, CxG = fit_CxG, CxV = fit_CxV), summary_from_optimize)) %>% 
+#   as.data.frame() %>% rownames_to_column("species") 
 
+# Get fidelity estimates for each species
+fidelity_estimates <- t(sapply(list(CxT = fit_CxT, CxG = fit_CxG, CxV = fit_CxV), summary_from_optimize)) %>%
+  as.data.frame() %>% rownames_to_column("Species")
+
+# Rename columns for clarity
+colnames(fidelity_estimates) <- c("Species", "negative_loglik", "loglik", 
+                                  "Fidelity_estimate", 
+                                  "Fidelity_lower", 
+                                  "Fidelity_upper")
+
+# Ensure consistency of species names between both datasets
+fidelity_estimates$Species <- recode(fidelity_estimates$Species,
+                                "CxT" = "Cx. tritaeniorhynchus",
+                                "CxG" = "Cx. gelidus",
+                                "CxV" = "Cx. vishnui")
+xtable::print.xtable(xtable::xtable(init_pref_tab), include.rownames = F, booktabs = T)
+
+# Merge initial preference and fidelity estimates
+init_pref_tab <- init_pref_tab %>%
+  left_join(fidelity_estimates, by = "Species") %>% 
+  mutate(f_stimate_95CI = paste0(round(Fidelity_estimate, 2), " (", 
+                round(Fidelity_lower, 2), ", ", round(Fidelity_upper, 2), ")")) %>% 
+  select(c(Species, p_estimate_95CI, f_stimate_95CI))
+
+init_pref_tab
 
 segment_df <- f_estimate_df %>% 
   mutate(species = factor(species, levels = c("CxG", "CxT", "CxV"),
