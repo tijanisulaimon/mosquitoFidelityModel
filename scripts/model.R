@@ -154,15 +154,7 @@ feeding_preference <- function(p_A, H_A, H_D, N_m, f) {
 #   return(y)
 # }
 
-# Likelihood function
-# likelihood <- function(f, n, r, N, R, rho_A, rho_D) {
-#   probBiteCowImprintedPig <- (1 - f) * rho_D
-#   probBiteCowImprintedCow <- rho_D + f * rho_A
-#   likelihood_r <- dbinom(r, n, probBiteCowImprintedPig)
-#   likelihood_R <- dbinom(R, N, probBiteCowImprintedCow)
-#   return(likelihood_r * likelihood_R)
-# }
-
+## Likelihood function
 neg_log_likelihood <- function(f, n_imprinted_pig, r_pig_pig, n_imprinted_cow, r_cow_cow, rho_A) {
   rho_D <- 1 - rho_A
   probBitePigImprintedPig <- f + (1 - f) * rho_A
