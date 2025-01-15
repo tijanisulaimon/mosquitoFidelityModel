@@ -1,7 +1,6 @@
 
 library(deSolve)            
 
-
 ###############################################################################################
 #*************** Mosquito-borne virus transmission model with fidelity behaviour **************
 #*##############################################################################################
@@ -13,9 +12,7 @@ mod_with_fidelity <- function(tt,yy,parms) with(c(parms,as.list(yy)), {
   N_de <- S_de + I_de + R_de  # total dead-end hosts
   Nh <- N_c +  N_de        # total hosts
   
-  # Nv_c <- Sv_c + Iv_c  # total vectors imprinted (took first bite) on competent host
-  # Nv_de <- Sv_de + Iv_de  # total vectors imprinted (took first bite) on dead-end host
-   Nv <- Sv_c + Iv_c + Sv_de + Iv_de + Nulv    # total vectors
+  Nv <- Sv_c + Iv_c + Sv_de + Iv_de + Nulv    # total vectors
   
   # proportion of blood meals on competent hosts:
   if(hostDefBeh==F){
@@ -27,8 +24,6 @@ mod_with_fidelity <- function(tt,yy,parms) with(c(parms,as.list(yy)), {
     rho_de <- 1 - rho_c
   }
   #********************************************************
-  
-  
   #*********************odes*****************************
   
   # Nuliparious mosquitoes
@@ -54,6 +49,7 @@ mod_with_fidelity <- function(tt,yy,parms) with(c(parms,as.list(yy)), {
   
   return(list( c(dNulv, dSv_c,dIv_c, dSv_de,dIv_de, dS_c,dI_c,dR_c, dS_de,dI_de,dR_de) ))
 })
+
 #*******************Function to run model**********************************
 sim_fidelity_model <- function(init=initial, tseq = times, modFunction = mod_with_fidelity
                 , parms = params()) {
@@ -62,7 +58,6 @@ sim_fidelity_model <- function(init=initial, tseq = times, modFunction = mod_wit
 }
 
 simV_fidelity <- Vectorize(sim_fidelity_model)
-
 
 #######################################
 #*************** R_0 **************
@@ -74,7 +69,6 @@ calculate_R0_simple <- function(N_m, p_A, N_c, alpha = 1/3, beta = 1, gamma = 1/
   rho_A <- (p_A*N_c)/(p_A*N_c + (1-p_A)*N_de )
   
   R_0 <- sqrt( (rho_A * alpha * beta * N_m / ((gamma + mu) * N)) * (rho_A * alpha * beta *N_c) / (mu_m*N) )
- # R_0 <- ifelse(is.infinite(R_0), 0, R_0)
   return(R_0)
 }
 
@@ -138,7 +132,7 @@ feeding_preference <- function(p_A, H_A, H_D, N_m, f) {
   return(feeding_res)
 }
 
-# parameter estimate function, given experimental results
+# parameter estimate function, given experimental data
 # probability.of.data <- function(f, 
 #                                 n,
 #                                 r,
@@ -154,7 +148,7 @@ feeding_preference <- function(p_A, H_A, H_D, N_m, f) {
 #   return(y)
 # }
 
-## Likelihood function
+## Use likelihood function
 neg_log_likelihood <- function(f, n_imprinted_pig, r_pig_pig, n_imprinted_cow, r_cow_cow, rho_A) {
   rho_D <- 1 - rho_A
   probBitePigImprintedPig <- f + (1 - f) * rho_A

@@ -1,5 +1,5 @@
+
 # packages required
-library(ggplot2)
 library(reshape)
 library(grid)
 library(gridExtra)
@@ -7,13 +7,14 @@ library(lhs)
 library(parallel)
 library(here)
 library(tidyverse)
+library(kableExtra)
+library(leaflet)
 
 # read in scripts
 source(here(".//scripts//model.R"))
 source(here(".//scripts//parameters.R"))
 
-# feeding pattern experiment (number of CP and CP always the same, why?, lazy to do the math)
-# Too many scenarios?
+#***************feeding pattern experiment**********************
 feeding_exp_df <- expand_grid(
   p_A = c(0.01, 0.05, 0.1, 0.2, 0.5),
   H_A = 500,  
@@ -30,8 +31,7 @@ feeding_exp_df <- feeding_exp_df %>%
   ) %>%
   unnest(cols = c(feeding_res))
 
-## Plotting the bar plot faceted by p_A and f
-## Deal with labeller() later
+## Plotting the bar plot faceted by p_A and f - Figure A in S1 Text.
 ggplot(feeding_exp_df %>% 
          mutate(labelled_f = paste0("Fidelity = ", f), 
                 labelled_p_A = paste0("Initial preference\nfor pigs = ", p_A),
@@ -55,13 +55,10 @@ ggplot(feeding_exp_df %>%
         strip.text = element_text(colour = "black", face = "bold", size = 14),
         legend.key.height = unit(0, "cm"),
         legend.margin=margin(0,0,0,0),
-        legend.text = element_text(colour = "black", face = "bold", size = 16)) #+
-#  guides(fill = guide_colorbar( barheight = 30))
-
-# looks bettern when you zoom and save with width and height = 12
+        legend.text = element_text(colour = "black", face = "bold", size = 16)) 
 # ggsave("./figures/choiceExperimentOriginal.pdf", width = 12, height = 12, units = "in")
 
-# plot version for main text
+# plot version for main text - Figure 2
 ggplot(
   feeding_exp_df %>% filter(feeding_pattern %in% c("AA", "AD", "DA", "DD") ) %>%
     mutate(first_bite = ifelse(feeding_pattern %in% c("AA", "AD"), "A", "D" ),
@@ -80,9 +77,6 @@ ggplot(
                                "Pig (imprinted onto cow)",
                                "Cow (imprinted onto pig)",
                                "Pig (imprinted onto pig)") ) +
-  # scale_colour_manual(name = "Imprinted Host",
-  #                   breaks = c("C","P"),
-  #                   values = c("blue","red")) +
   theme_bw() +
   theme(panel.grid = element_blank(),
         axis.text.x  = element_text(colour = "black", face = "bold", size = 13),
@@ -94,12 +88,11 @@ ggplot(
         strip.background = element_rect(colour = "black", fill = "white"),
         strip.text = element_text(colour = "black", size = 14),
         legend.spacing.y = unit(0.5, 'cm'),
-        legend.text = element_text(colour = "black", face = "bold", size = 12)) #+
- # guides(fill = guide_legend(byrow = TRUE))
+        legend.text = element_text(colour = "black", face = "bold", size = 12)) 
 # ggsave("./figures/choiceExperiment.pdf", width = 12, height = 12, units = "in")
 
 
-# set scenario
+# set scenarios
 Nhost <- 1000
 M0 <- 5000     # Number of vectors
 times <- seq(0,365,1)   # Time steps for reporting
@@ -125,52 +118,10 @@ R0_exp_df <- R0_exp_df %>%
   ) %>%
   unnest(cols = c(R0))
 
-# # Line plot for R0
-# R0_exp_df %>%
-#   ggplot(aes(x = f, y = R0)) +
-#   geom_line(aes(group = factor(N_c), color = factor(N_c/Nhost)), linewidth = 0.8) +
-#   geom_hline(aes(yintercept = 1), linewidth = 0.8) +
-#   facet_grid(N_m/Nhost ~ p_A, scales = "free_y") +
-#   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
-#   labs(x = "Fidelity", y = expression(R[0]), color = expression(N[A]/N)) +
-#   theme(legend.position = "bottom",
-#         panel.border = element_rect(fill = NA),
-#         panel.grid = element_blank(),
-#         axis.text = element_text(colour = "black", face = "bold"),
-#         strip.background = element_rect(colour = "black", fill = "white"),
-#         strip.text = element_text(colour = "black", face = "bold"),
-#         legend.box.background = element_rect(colour = "black", fill = "white"),
-#         legend.text = element_text(colour = "black", face = "bold")) +
-#   guides(colour = guide_legend(nrow = 1))
-
-# cols <- c("#0020E9", "#0076FF", "#00B8C2", "#04E466", "#49FB25", 
-#           "#E7FD09", "#FEEA02", "#FFC200", "#FFA500", "#FF8C00", 
-#           "#FF0000", "#DC143C", "#8B0000")
-# 
-# # As heat plot
-# R0_exp_df %>% mutate(R0_mod = if_else(R0 < 1, NA, R0) ) %>% 
-#   ggplot(aes(x = f, y = N_c/Nhost)) +
-#   geom_raster(aes(fill = R0_mod) ) +  
-#   facet_grid(N_m/Nhost ~ p_A, scales = "free_y") +
-#   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
-#   scale_y_continuous(breaks = seq(0, 1, 0.2)) +
-#   scale_fill_gradientn(colours = cols, breaks = seq(0, max(R0_exp_df$R0), 5), na.value = "darkgray")+
-#  #  scale_fill_viridis_c(option = "H", breaks = seq(0, max(R0_exp_df$R0), 5), na.value = "darkgray") + 
-#   labs(x = "Fidelity", fill = expression(R[0]), y = expression(N[A]/N)) +
-#   theme_classic()+
-#   theme(panel.grid = element_blank(),
-#         axis.text = element_text(colour = "black", face = "bold"),
-#         strip.background = element_rect(colour = "black", fill = "white"),
-#         strip.text = element_text(colour = "black", face = "bold"),
-#         legend.text = element_text(colour = "black", face = "bold")) +
-#   guides(fill = guide_colorbar( barheight = 30))
-
-
-# R0 value plot: final modification - AW
-library(leaflet)
-# Custom palette for >1 R values
+# AW: R0 value plot: custom palette for >1 R values
 pal = colorNumeric(rev("OrRd"), 1:6)
 
+# Figure 3
 R0_exp_df %>% mutate(
   prefComp.pretty = paste0("Initial preference\nfor amplifying\nhost = ", p_A),
   mosPerHost.pretty = 
@@ -194,65 +145,8 @@ R0_exp_df %>% mutate(
         legend.text = element_text(colour = "black", face = "bold", size = 12)) 
 # ggsave("./figures/R0.pdf", width = 12, height = 12, units = "in")
 
-# initial conditions for simulation (scenario not included in paper)
-initial <- c(Nulv = M0
-             ,Sv_c = 0 #prefComp*M0      # susceptible mosquitoes
-             ,Iv_c = 1               # infectious mosquitoes
-             ,Sv_de = 0 # (1-prefComp)*M0      # susceptible mosquitoes
-             ,Iv_de = 0               # infectious mosquitoes
-             ,S_c = startingS_c      # susceptible competent hosts
-             ,I_c = 0               # infected competent hosts
-             ,R_c = 0               # recovered competent hosts
-             ,S_de = deadEnds      # susceptible dead-end hosts
-             ,I_de = 0               # infected dead-end hosts
-             ,R_de = 0               # recovered dead-end hosts
-)
 
-#********test run the model*********
-sim_f_Dat <- as.data.frame(lsoda(y = initial  # initial state variables
-                              , times = times
-                              , func = mod_with_fidelity   # see model.R
-                              , parms = params(prefComp = prefComp, f = 0) ))  # preference and numbers of dead-end hosts per patch
-
-# post process to calculate total (susc. and inf.) mosquito populations
-sim_f_Dat <- sim_f_Dat %>% 
-  mutate(
-    Sv = Nulv + Sv_c + Sv_de,
-    Iv = Iv_c + Iv_de
-  )
-
-# plot not included in the paper: delete?
-sim_f_Dat %>% select(-c(Sv, Iv)) %>% 
-  pivot_longer(cols = !time, names_to = "class", values_to = "pop") %>% 
-  mutate(
-    type =  case_when(
-      class %in% c("S_c", "I_c", "R_c") ~ "Competent_hosts",
-      class %in% c("S_de", "I_de", "R_de") ~ "DeadEnd_hosts",
-      class %in% c("Sv_c", "Iv_c") ~ "Imprinted_CH",
-      class %in% c("Sv_de", "Iv_de") ~ "Imprinted_DH",
-      class %in% "Nulv" ~ "Nulv",
-      .default = NA),
-    State = case_when(
-      class %in% c("S_c", "S_de", "Sv_c", "Sv_de", "Nulv") ~ "Susceptible",
-      class %in% c("I_c", "I_de", "Iv_c", "Iv_de") ~ "Infected",
-      class %in% c("R_c", "R_de") ~ "Recovered",
-      .default = NA
-    )
-  ) %>% filter(type != "Nulv") %>% 
-  ggplot()+
-  geom_line(aes(x = time,y = pop, colour = State, group = State),linewidth=1) +
-  facet_wrap(~ type, scales = "free_y")+
-  theme_bw()
-
-
-#*************************
-#*
-#*
-#
-
-#***************Sensitivity analysis**********************
-#*
-#* Maybe use R_0 to identify interesting dynamics. E.g., ignore obvious ones, where no epidemic spread
+#***************disease dynamics**********************
 Nhost <- 1000
 
 sensParamsDf <- expand.grid(
@@ -267,8 +161,7 @@ sensParamsDf <- expand.grid(
     mosquitoes.per.host = startingNulv/(startingS_c + deadEnds)
   )
 
-
-# ********run model for each parameter set******
+#********run model for each parameter set******
 sensTrajList <- mclapply(1:nrow(sensParamsDf), function(x){
   library(here)
   source(here(".//scripts//model.R"))
@@ -303,7 +196,7 @@ sensTrajList <- mclapply(1:nrow(sensParamsDf), function(x){
 #******************************************************
 sensTrajDF <- do.call(rbind, sensTrajList)
 
-# New catch-all version
+# # Figure 4
 sensTrajDF %>% 
   pivot_longer(
     cols = c("I_c", "I_de"),
@@ -326,7 +219,6 @@ sensTrajDF %>%
   scale_y_continuous(limits=c(0, NA), expand=c(0.05, 0.05), position = "left") +
   coord_cartesian(clip = "off") +
   facet_grid(paste0(startingS_c.pretty, "\n", prefComp.pretty) ~ fidelity.pretty) +
-  #facet_grid(paste0(startingS_c.pretty, "\n", prefComp.pretty) ~ fidelity.pretty, switch = "y") +
   scale_color_brewer("",
                      palette = "Set1",
                      breaks = c("I_c","I_de"),
@@ -334,10 +226,8 @@ sensTrajDF %>%
   theme_bw(base_size = 9) +
   ylab("Prevalence") +
   xlab("Time") +
-#  ggtitle("Epidemic trajectories") +
   theme(strip.background = element_rect(fill="grey98"),
         strip.placement = "outside",
-       # title = element_text(size = 12),
         strip.text = element_text(size = 17),
         axis.text = element_text(size = 14),
         axis.title = element_text(size = 16),
@@ -346,9 +236,46 @@ sensTrajDF %>%
         legend.direction = "horizontal")
 # ggsave(paste0(here(),"/figures/traj5MosPerHost_revised.pdf"), width = 12, height = 12, units = "in")
 
+
+# Create the data
+cumInc_tab <- sensTrajDF %>%
+  filter(mosquitoes.per.host == 5,
+         startingS_c %in% c(100, 500),
+         fidelity %in% c(0, 0.2, 0.5, 0.8, 1),
+         prefComp %in% c(0.05, 0.2)) %>%
+  mutate(
+    cummInc_c = round(startingS_c - S_c, 2),
+    cummInc_de = round(deadEnds - S_de, 2),
+    PropCompHost = startingS_c/(startingS_c + deadEnds)
+  ) %>% 
+  filter(time == max(times)) %>% 
+  select(prefComp, fidelity, PropCompHost, cummInc_c, cummInc_de) %>% 
+  arrange(prefComp, fidelity, PropCompHost) %>% 
+  rename(
+    `Preference for competent hosts` = prefComp,
+    `Fidelity` = fidelity,
+    `Proportion of competent hosts` = PropCompHost,
+    `Competent hosts` = cummInc_c,
+    `Dead-end hosts` = cummInc_de
+  ) 
+
+
+# Export the tidy table to LaTeX - Table B in S1 Text
+kable(cumInc_tab, format = "latex", booktabs = TRUE, escape = FALSE,
+             table.envir = "table", align='l', label = "tab:cumInc",
+             caption = "Cumulative incidence of infected hosts"
+      ) %>% 
+  kable_styling(full_width = T) %>%
+  column_spec(c(1, 3), width = "9em") %>% 
+  column_spec(c(4, 5), width = "7em") %>% 
+  column_spec(2, width = "5em") %>% 
+  add_header_above(header = c("Scenario" = 3, "Cumulative incidence" = 2)) %>% 
+  collapse_rows(columns = 1:3, latex_hline = "major", row_group_label_position = "stack")
+
+
+
 #********Specie specific estimates of rho_A and f, with R_0 explorations*********
 # Get CI around estimates for initial preference for pigs, rho_A
-
 # Perform binomial tests
 rhoA_CxT <- binom.test(x = 0, n = 10, p = 0.5, conf.level = 0.95)
 rhoA_CxG <- binom.test(x = 14, n = 63, p = 0.5, conf.level = 0.95)
@@ -375,14 +302,6 @@ init_pref_tab <- init_pref_res %>%
 init_pref_tab
 
 
-# init_pref_est_df <- data.frame(
-#   species = c("CxT", "CxG", "CxV"),
-#   p_A = c(0.05, rhoA_CxG$estimate[[1]], rhoA_CxV$estimate[[1]]),
-#   p_A_lci = c(rhoA_CxT$conf.int[[1]], rhoA_CxG$conf.int[[1]], rhoA_CxV$conf.int[[1]]),
-#   p_A_uci = c(rhoA_CxT$conf.int[[2]], rhoA_CxG$conf.int[[2]], rhoA_CxV$conf.int[[2]])
-# )
-
-
 # Use optim to estimate paramters and 
 fit_CxT <- optim(par = 0.0001, fn = neg_log_likelihood, lower = 0, upper = 1,
                  n_imprinted_pig = 21, r_pig_pig = 12, n_imprinted_cow = 8, r_cow_cow = 7, rho_A = 0.05, method = "Brent", hessian =T)
@@ -407,9 +326,6 @@ summary_from_optimize <- function(fit){
   ))
 }
 
-# f_estimate_df <- t(sapply(list(CxT = fit_CxT, CxG = fit_CxG, CxV = fit_CxV), summary_from_optimize)) %>% 
-#   as.data.frame() %>% rownames_to_column("species") 
-
 # Get fidelity estimates for each species
 fidelity_estimates <- t(sapply(list(CxT = fit_CxT, CxG = fit_CxG, CxV = fit_CxV), summary_from_optimize)) %>%
   as.data.frame() %>% rownames_to_column("Species")
@@ -425,6 +341,7 @@ fidelity_estimates$Species <- recode(fidelity_estimates$Species,
                                 "CxT" = "Cx. tritaeniorhynchus",
                                 "CxG" = "Cx. gelidus",
                                 "CxV" = "Cx. vishnui")
+# Table A
 xtable::print.xtable(xtable::xtable(init_pref_tab), include.rownames = F, booktabs = T)
 
 # Merge initial preference and fidelity estimates
@@ -436,7 +353,7 @@ init_pref_tab <- init_pref_tab %>%
 
 init_pref_tab
 
-# Plot the log-likelihoods
+# Plot the log-likelihoods - Figure B in S1 Text
 expand_grid(f = seq(0, 1, length.out = 1000), Species = fidelity_estimates$Species) %>% 
   left_join(init_pref_res %>% select(Species, estimate), by = "Species") %>%
   left_join(fidelity_estimates %>% select(Species, loglik), by = "Species") %>% 
@@ -470,8 +387,7 @@ expand_grid(f = seq(0, 1, length.out = 1000), Species = fidelity_estimates$Speci
 # ggsave("./figures/fidelity_estimate.pdf", width = 10, height = 10, units = "in")
 
 ##################################
-#********R_0 exploration*********
-
+#********R_0 exploration with species-specific fidelity values*********
 Nhost <- 1000 
 
 # # select random sets of plausible fidelity values within the ranges estimated from log-likelihood estimation
@@ -493,6 +409,7 @@ R0_sp_fidelity_df <- reshape2::melt(r_fidelity_Vals, variable.name = "Species", 
   mutate(R0 = calculate_R0(f = f, p_A = estimate, N_m = 5*Nhost, N_c = N_c),
          Sepcies_est = paste0(Species, " (f = ", round(Fidelity_estimate, 2), ")") )
 
+# Figure 5
 R0_sp_fidelity_df %>% 
   group_by(Species, N_c, Sepcies_est) %>% 
   dplyr::summarise(mean_R0 = mean(R0), 

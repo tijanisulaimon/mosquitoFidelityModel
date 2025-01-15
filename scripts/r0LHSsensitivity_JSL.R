@@ -1,23 +1,13 @@
+
 library(parallel)
 library(lhs)
 library(ggplot2)
-
-##
-
-#******************************************************
-# f <- c(0,1) 
-# p_A <- c(0,1)
-# N_m <- c(100, 10000)
-# N_c <- c(100, 1000)
-# alpha <- c(1/6,1/2)
-# beta <- c(0,1)
-# gamma <- c(2,7)
-# mu <- c(1/1095,1/90)
-# mu_m <- c(1/35,1/15)
+set.seed(15012025)
+#***********************Global sensitivity analysis*******************************
 
 f <- c(0, 1) 
 p_A <- c(0, 0.1)
-Nmph <- c(1,100) # i#Jen, adjusting the max to 5 mos per host to match Fig. 3. shld discuss
+Nmph <- c(1,100) # 
 N_c <- c(100, 1000)
 alpha <- c(1/6, 1/2)
 beta <- c(0, 1)
@@ -95,28 +85,7 @@ dat <- reshape::melt(dat, measure.vars=c(
 
 # head(dat)
 
- # ggplot(dat, aes(x=value,y=sim.res,colour=f)) +
- #   geom_point(size=0.01,alpha=0.5) +
- #   facet_wrap(~variable,scales="free_x") +
- #   scale_color_gradient(low="#0000FF",high="#FF0000") +
- #   xlab("Parameter value") +
- #   ylab("R0") +
- #   theme_set(theme_bw())  +
- #   theme(panel.border = element_blank()
- #         ,axis.line = element_line(color = 'grey')
- #         ,text=element_text(size=9)
- #         ,panel.spacing = unit(1, "lines")
- #         #,plot.margin=unit(c(0.2,0.1,0.1,0.1), "cm")
- #         ,axis.text=element_text(size=6)
- #         ,legend.key.size = unit(0.6,"line")
- #         ,legend.background = element_blank()
- #         ,legend.text=element_text(size=9)
- #         ,legend.position =c(0.9,0.2)
- #         ,legend.title = element_text(size=9)
- #         ,strip.background = element_rect(fill="white",color="white")
- #   ) 
-
-# night want to reduce the size and alpha of points
+# Figure C in S1 Text
 ggplot(dat, aes(x=value,y=sim.res,colour=f)) +
   geom_point(size=0.8,alpha=0.5) +
   facet_wrap( ~ factor(variable, levels = c("p_A","Nmph","alpha","beta","gamma","mu","mu_m", "comp2dead"), 
@@ -130,11 +99,11 @@ ggplot(dat, aes(x=value,y=sim.res,colour=f)) +
                                   expression(paste("Number of dead-end host (", H[A]/H[D], ")"))
                                   ) ), 
               scales = "free_x", labeller = label_parsed) +
-  # scale_colour_viridis_c(option = "D") +
-  scale_color_gradient(name = "Fidelity (f)", low="#0000FF", high="#FF0000", breaks = seq(0, 1, 0.2), limit = c(0, 1)) +
+  scale_color_gradient(name = "Fidelity (f)", low="#0000FF", high="#FF0000", breaks = seq(0, 1, 0.2), 
+                       limit = c(0, 1)) +
   xlab("Parameter value") +
   ylab(expression(R[0])) +
-  theme_set(theme_bw())  +
+  theme_bw()  +
   theme(panel.border = element_blank()
         ,axis.line = element_line(color = 'grey')
         ,text=element_text(size=16)
@@ -153,68 +122,4 @@ ggplot(dat, aes(x=value,y=sim.res,colour=f)) +
         legend.direction = "horizontal"
   ) 
 # ggsave("./figures/global_sensitivity_analysis.pdf", width = 12, height = 12, units = "in")
- #***********or just including in a plot of its own as before**********
- dat <- cbind.data.frame(randSnd, sensSims) 
- dat$comp2dead <- dat$N_c/1000
- dat <- dat[,-4] # remove N_c column
  
- dat <- reshape::melt(dat, measure.vars=c(
-   "f"
-   ,"p_A" 
-   ,"Nmph"
-   ,"alpha"
-   ,"beta"
-   ,"gamma"
-   ,"mu"
-   ,"mu_m"
-   ,"comp2dead"
- ))
- 
- # head(dat)
- 
- ggplot(dat, aes(x=value,y=sim.res)) +
-   geom_point(size=0.01,color="black",alpha=0.2) +
-   facet_wrap(~variable,scales="free_x") +
-  # scale_color_gradient(low="#0000FF",high="#FF0000") +
-   xlab("Parameter value") +
-   ylab("R0") +
-   theme_set(theme_bw())  +
-   theme(panel.border = element_blank()
-         ,axis.line = element_line(color = 'grey')
-         ,text=element_text(size=9)
-         ,panel.spacing = unit(1, "lines")
-         #,plot.margin=unit(c(0.2,0.1,0.1,0.1), "cm")
-         ,axis.text=element_text(size=6)
-         ,legend.key.size = unit(0.6,"line")
-         ,legend.background = element_blank()
-         ,legend.text=element_text(size=9)
-         ,legend.position =c(0.9,0.5)
-         ,legend.title = element_text(size=9)
-         ,strip.background = element_rect(fill="white",color="white")
-   ) 
- 
-
-
-# ggplot(dat %>% filter(!(variable %in% c("N_m", "N_c"))), aes(x=value, y=sim.res)) +
-#   geom_point(size=0.1, col="black",alpha=0.9) +
-#   facet_wrap(~ factor(variable, levels = c("f", "p_A", "mos_per_host", "alpha", "beta", "gamma", "mu", "mu_m"),
-#                      labels = c("f", expression(p[A]), expression(N[m]/N[A]), 
-#                                 "alpha", "beta", "gamma", "mu", expression(mu[m])) ), 
-#              scales="free_x", labeller = label_parsed, nrow = 4) +
-#   xlab("Parameter value") +
-#   ylab( expression(paste("Basic reproduction number (", R[0], ")" ) ) ) +
-#   theme_set(theme_bw())  +
-#   theme_classic() + 
-#   theme(panel.border = element_blank()
-#         ,axis.line = element_line(color = 'grey')
-#         ,axis.title=element_text(size=15)
-#         , strip.text = element_text(size = 20)
-#         ,panel.spacing = unit(1, "lines")
-#         ,plot.margin=unit(c(0.1,0.5,0.1,0.1), "cm")
-#         ,axis.text=element_text(size = 14)
-#         ,strip.background = element_rect(fill="white",color="white")
-#   ) 
-# ggsave("./figures/global_sensitivity_analysis.pdf", width = 12, height = 12, units = "in")
-
-
-
